@@ -1,7 +1,18 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 export default function HomePage() {
+    const [bgLoaded, setBgLoaded] = useState(false);
+    const bgImage = "/images/bg.jpg"; // ✅ 从 public/images 加载
+
+    // ✅ 检查背景是否能加载成功
+    useEffect(() => {
+        const img = new Image();
+        img.src = bgImage;
+        img.onload = () => setBgLoaded(true);
+        img.onerror = () => setBgLoaded(false);
+    }, []);
+
     // ✅ 禁止首页滚动条
     useEffect(() => {
         document.body.style.overflow = "hidden";
@@ -12,20 +23,24 @@ export default function HomePage() {
 
     return (
         <section
-            className="relative w-full h-screen overflow-hidden text-white"
+            className="relative w-full h-screen overflow-hidden text-white transition-all duration-700"
             style={{
-                backgroundImage: "url('/images/bg.jpg')",
+                backgroundImage: bgLoaded
+                    ? `url(${bgImage})`
+                    : "linear-gradient(135deg, #2d2d2d, #444)", // ✅ fallback 渐变背景
                 backgroundSize: "cover",
                 backgroundPosition: "center",
-                backgroundAttachment: "fixed",
-                animation: "bgZoom 15s ease-in-out infinite alternate", // ✅ 背景轻微放大
+                backgroundAttachment: "scroll", // ✅ 移动端兼容更好
+                animation: bgLoaded
+                    ? "bgZoom 15s ease-in-out infinite alternate"
+                    : "none",
             }}
         >
             {/* ✅ 轻柔白色蒙版（增加雾感） */}
-            <div className="absolute inset-0 bg-white opacity-[0.08]"></div>
+            <div className="absolute inset-0 bg-white opacity-[0.08] pointer-events-none"></div>
 
-            {/* ✅ 半透明黑遮罩（增加对比） */}
-            <div className="absolute inset-0 bg-black bg-opacity-25"></div>
+            {/* ✅ 半透明黑遮罩（增强对比） */}
+            <div className="absolute inset-0 bg-black bg-opacity-25 pointer-events-none"></div>
 
             {/* ✅ 内容居中 */}
             <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-6">
@@ -80,17 +95,17 @@ export default function HomePage() {
 
             {/* ✅ 背景缩放动画 */}
             <style>{`
-        @keyframes bgZoom {
-          0% {
-            transform: scale(1);
-            filter: brightness(0.9);
-          }
-          100% {
-            transform: scale(1.05);
-            filter: brightness(1);
-          }
-        }
-      `}</style>
+                @keyframes bgZoom {
+                    0% {
+                        transform: scale(1);
+                        filter: brightness(0.9);
+                    }
+                    100% {
+                        transform: scale(1.05);
+                        filter: brightness(1);
+                    }
+                }
+            `}</style>
         </section>
     );
 }

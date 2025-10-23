@@ -125,8 +125,9 @@ export default function AdminMenuPage() {
             )}
 
             <h1 className="text-3xl font-bold text-center mb-8 text-[#A678E3]">
-                🍽 Admin: Menu Management
+                🍴 Admin: Menu Management
             </h1>
+
 
             {/* ===== 表单区域 ===== */}
             <div className="bg-white p-6 rounded-xl shadow-md mb-8">

@@ -1,4 +1,7 @@
 require("dotenv").config();
+console.log("📍 Using MongoDB URI:", process.env.MONGO_URI);
+
+
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ObjectId } = require("mongodb");
@@ -89,15 +92,14 @@ async function startServer() {
 
         app.put("/api/menu/:id", async (req, res) => {
             try {
-                const database = await connectToMongo();
                 const id = req.params.id;
 
-                // ✅ 检查 ID 是否合法
+                // 检查 ID 合法性
                 if (!ObjectId.isValid(id)) {
                     return res.status(400).json({ error: "Invalid ID format" });
                 }
 
-                // ✅ 只更新允许的字段
+                // 提取要更新的字段
                 const { name, category, price, description } = req.body;
                 const updateData = {};
                 if (name) updateData.name = name;
@@ -105,7 +107,8 @@ async function startServer() {
                 if (price) updateData.price = parseFloat(price);
                 if (description) updateData.description = description;
 
-                const result = await database.collection("menu").updateOne(
+                // 直接使用全局 db 更新
+                const result = await db.collection("menu").updateOne(
                     { _id: new ObjectId(id) },
                     { $set: updateData }
                 );
@@ -120,6 +123,7 @@ async function startServer() {
                 res.status(500).json({ error: "Server error updating menu" });
             }
         });
+
 
 
         app.delete("/api/menu/:id", async (req, res) => {

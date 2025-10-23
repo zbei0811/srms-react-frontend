@@ -154,7 +154,7 @@ export default function MenuPage() {
             </div>
 
             <h1 className="text-3xl font-bold mb-6 text-center text-[#A678E3]">
-                🍽️ Our Menu
+                🍴 Our Menu
             </h1>
 
             {/* 搜索框 */}

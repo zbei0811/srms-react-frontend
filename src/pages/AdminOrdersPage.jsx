@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Swal from "sweetalert2";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -14,115 +14,165 @@ export default function AdminOrdersPage() {
       const res = await axios.get("http://localhost:5000/api/orders");
       setOrders(res.data);
     } catch (err) {
-      console.error("❌ Failed to fetch orders", err);
+      console.error("❌ Error fetching orders:", err);
     }
   };
 
-  // ✅ 更新状态为“已完成”
   const markCompleted = async (id) => {
-    await axios.put(`http://localhost:5000/api/orders/${id}`, { status: "Completed" });
-    fetchOrders();
-    Swal.fire({
-      icon: "success",
-      title: "✅ Order Completed!",
-      confirmButtonColor: "#A678E3",
-    });
-  };
-
-  // ✅ 删除订单（可选）
-  const handleDelete = async (id) => {
-    Swal.fire({
-      title: "Delete this order?",
-      text: "This action cannot be undone.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#A678E3",
-      cancelButtonColor: "#aaa",
-      confirmButtonText: "Yes, delete it",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        await axios.delete(`http://localhost:5000/api/orders/${id}`);
-        fetchOrders();
-        Swal.fire("Deleted!", "Order has been removed.", "success");
-      }
-    });
-  };
-
-  // ✅ 颜色显示逻辑（只两种状态）
-  const getStatusStyle = (status) => {
-    const normalized = (status || "").toLowerCase();
-    if (normalized === "completed" || normalized === "delivered") {
-      return "bg-[#84C784] text-black";
+    try {
+      await axios.put(`http://localhost:5000/api/orders/${id}`, {
+        status: "Completed",
+      });
+      fetchOrders();
+    } catch (err) {
+      console.error("❌ Error updating order:", err);
     }
-    return "bg-[#F6D96B] text-black";
   };
 
-  const getStatusLabel = (status) => {
-    const normalized = (status || "").toLowerCase();
-    if (normalized === "completed" || normalized === "delivered") return "Completed";
-    return "In Progress";
+  const deleteOrder = async (id) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/orders/${id}`);
+      fetchOrders();
+    } catch (err) {
+      console.error("❌ Error deleting order:", err);
+    }
   };
 
   return (
-    <div className="max-w-5xl mx-auto py-10">
+    <div className="p-8 bg-gray-50 min-h-screen">
+
       <h1 className="text-3xl font-bold text-center mb-8 text-[#A678E3]">
-        📦 Admin: Orders
+        🧾 Admin: Orders
       </h1>
 
-      <div className="overflow-x-auto bg-white rounded-xl shadow">
-        <table className="w-full border-collapse">
-          <thead className="bg-gray-100">
+
+      <div className="overflow-x-auto bg-white rounded-lg shadow">
+        <table className="min-w-full text-sm text-gray-700">
+          <thead className="bg-purple-100 text-left">
             <tr>
-              <th className="p-3 border-b">Customer</th>
-              <th className="p-3 border-b">Items</th>
-              <th className="p-3 border-b">Total ($)</th>
-              <th className="p-3 border-b">Status</th>
-              <th className="p-3 border-b text-center">Actions</th>
+              <th className="px-4 py-3">Customer</th>
+              <th className="px-4 py-3">Contact</th>
+              <th className="px-4 py-3">Order Type</th>
+              <th className="px-4 py-3">Items</th>
+              <th className="px-4 py-3">Total ($)</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => (
-              <tr key={o._id} className="hover:bg-gray-50">
-                <td className="p-3">{o.customerName || "N/A"}</td>
-                <td className="p-3">
-                  {Array.isArray(o.items)
-                    ? o.items.join(", ")
-                    : String(o.items || "N/A")}
+            {orders.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="text-center py-6 text-gray-400">
+                  No orders yet.
                 </td>
-                <td className="p-3">{o.total?.toFixed(2)}</td>
-                <td className="p-3">
-                  <span
-                    className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusStyle(
-                      o.status
-                    )}`}
-                  >
-                    {getStatusLabel(o.status)}
-                  </span>
-                </td>
-                <td className="p-3 text-center space-x-2">
-                  {o.status?.toLowerCase() !== "completed" &&
-                    o.status?.toLowerCase() !== "delivered" && (
+              </tr>
+            ) : (
+              orders.map((order) => (
+                <tr
+                  key={order._id}
+                  className="border-b hover:bg-gray-50 transition"
+                >
+                  <td className="px-4 py-3 font-medium">
+                    {order.customerName || "N/A"}
+                  </td>
+                  <td className="px-4 py-3">{order.contactNumber || "N/A"}</td>
+                  <td className="px-4 py-3">{order.orderType || "N/A"}</td>
+                  <td className="px-4 py-3">
+                    {Array.isArray(order.items)
+                      ? order.items.map((item, i) => (
+                        <span key={i}>
+                          {item.name || item.itemName} × {item.quantity}
+                          {i < order.items.length - 1 && ", "}
+                        </span>
+                      ))
+                      : "No items"}
+                  </td>
+                  <td className="px-4 py-3">
+                    ${order.total ? order.total.toFixed(2) : "0.00"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${order.status === "Completed"
+                        ? "bg-green-200 text-green-800"
+                        : "bg-yellow-200 text-yellow-800"
+                        }`}
+                    >
+                      {order.status || "In Progress"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 space-x-2">
+                    {order.status !== "Completed" && (
                       <button
-                        onClick={() => markCompleted(o._id)}
-                        className="px-3 text-xs font-medium rounded-full bg-[#A678E3] text-white hover:bg-[#8C5DD8] transition"
-                        style={{ height: "26px", lineHeight: "26px" }}
+                        onClick={() => markCompleted(order._id)}
+                        className="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-md text-sm"
                       >
                         Mark Completed
                       </button>
                     )}
-                  <button
-                    onClick={() => handleDelete(o._id)}
-                    className="px-3 text-xs font-medium rounded-full bg-[#E57373] text-white hover:bg-[#D64F4F] transition"
-                    style={{ height: "26px", lineHeight: "26px" }}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
+                    <button
+                      onClick={() => deleteOrder(order._id)}
+                      className="bg-red-400 hover:bg-red-500 text-white px-3 py-1 rounded-md text-sm"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => setSelectedOrder(order)}
+                      className="bg-indigo-400 hover:bg-indigo-500 text-white px-3 py-1 rounded-md text-sm"
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* 🔍 Order Details Modal */}
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-xl font-semibold mb-4 text-purple-600">
+              Order Details
+            </h2>
+            <p>
+              <strong>Customer:</strong> {selectedOrder.customerName}
+            </p>
+            <p>
+              <strong>Contact:</strong> {selectedOrder.contactNumber}
+            </p>
+            <p>
+              <strong>Order Type:</strong> {selectedOrder.orderType}
+            </p>
+            <p>
+              <strong>Status:</strong> {selectedOrder.status}
+            </p>
+            <p>
+              <strong>Total:</strong> ${selectedOrder.total?.toFixed(2)}
+            </p>
+            <p className="mt-3">
+              <strong>Items:</strong>
+            </p>
+            <ul className="list-disc ml-6 text-gray-700">
+              {selectedOrder.items?.map((item, i) => (
+                <li key={i}>
+                  {item.name || item.itemName} × {item.quantity}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-6 text-right">
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="bg-gray-300 hover:bg-gray-400 px-4 py-1 rounded-md text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
