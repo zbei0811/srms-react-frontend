@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
+import axios from "../axiosConfig";
 import { useCart } from "../context/CartContext";
 import Swal from "sweetalert2";
 
@@ -8,7 +8,10 @@ export default function MenuPage() {
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("All");
     const [priceMax, setPriceMax] = useState(50);
+
     const { addToCart, cart } = useCart();
+
+    const token = localStorage.getItem("token");
 
     // === AI Assistant State ===
     const [recommendations, setRecommendations] = useState([]);
@@ -18,7 +21,9 @@ export default function MenuPage() {
     const [typing, setTyping] = useState(false);
     const chatBoxRef = useRef(null);
 
-    // ✅ 初始化菜单
+    // =============================
+    // 载入菜单
+    // =============================
     useEffect(() => {
         axios
             .get("http://localhost:5000/api/menu")
@@ -26,7 +31,9 @@ export default function MenuPage() {
             .catch((err) => console.error("❌ Failed to load menu:", err));
     }, []);
 
-    // ✅ 根据时间段显示问候语
+    // =============================
+    // 初始化 AI 问候语
+    // =============================
     useEffect(() => {
         const hour = new Date().getHours();
         let greet = "Hello!";
@@ -43,49 +50,57 @@ export default function MenuPage() {
         ]);
     }, []);
 
-    // ✅ 根据购物车内容生成个性化推荐
+    // =============================
+    // AI 推荐系统
+    // =============================
     useEffect(() => {
-        if (cart.length > 0) {
-            const last = cart[cart.length - 1];
-            axios
-                .get(`http://localhost:5000/api/ai/recommend?type=${last.category}`)
-                .then((res) => setRecommendations(res.data))
-                .catch(() => setRecommendations([]));
-        } else {
-            axios
-                .get("http://localhost:5000/api/ai/recommend")
-                .then((res) => setRecommendations(res.data))
-                .catch(() => setRecommendations([]));
-        }
+        const url =
+            cart.length > 0
+                ? `http://localhost:5000/api/ai/recommend?type=${cart[cart.length - 1].category}`
+                : "http://localhost:5000/api/ai/recommend";
+
+        axios
+            .get(url, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            .then((res) => setRecommendations(res.data))
+            .catch(() => setRecommendations([]));
     }, [cart]);
 
-    // ✅ 聊天滚动到底部
+    // 聊天窗口自动滚动到底部
     useEffect(() => {
         if (chatBoxRef.current) {
             chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
         }
     }, [messages]);
 
-    // ✅ 聊天发送逻辑
+    // =============================
+    // 发送聊天
+    // =============================
     const sendMessage = async () => {
         if (!input.trim()) return;
+
         const userMsg = { from: "user", text: input };
+
+        // 先把用户消息加到对话里
         setMessages((prev) => [...prev, userMsg]);
         setInput("");
         setTyping(true);
 
         try {
-            const { data } = await axios.post("http://localhost:5000/api/ai/chat", {
-                message: input,
-                userId: "guest",
-            });
+            const { data } = await axios.post(
+                "http://localhost:5000/api/ai/chat",
+                { message: input },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
 
-            // 模拟打字延迟
             setTimeout(() => {
                 setTyping(false);
                 setMessages((prev) => [...prev, { from: "ai", text: data.reply }]);
             }, 900);
-        } catch {
+        } catch (err) {
             setTyping(false);
             setMessages((prev) => [
                 ...prev,
@@ -94,24 +109,35 @@ export default function MenuPage() {
         }
     };
 
-    // ✅ 加入购物车 + 保存偏好
+    // =============================
+    // Add to Cart + 通知 AI 偏好学习
+    // =============================
     const handleAdd = (item) => {
         addToCart(item);
+
         Swal.fire({
             position: "top-end",
             icon: "success",
             title: `${item.name} added to cart!`,
             showConfirmButton: false,
-            timer: 1000,
+            timer: 800,
         });
 
-        // 模拟“记录用户偏好”发送到 AI
-        axios.post("http://localhost:5000/api/ai/learn", {
-            category: item.category,
-            name: item.name,
-        });
+        axios
+            .post(
+                "http://localhost:5000/api/ai/learn",
+                { category: item.category, name: item.name },
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+            .catch((err) => {
+                console.warn("AI learn failed:", err?.response?.status, err?.message);
+            });
     };
 
+
+    // =============================
+    // 过滤菜单
+    // =============================
     const filtered = menu
         .filter((item) =>
             item.name.toLowerCase().includes(search.toLowerCase().trim())
@@ -126,10 +152,9 @@ export default function MenuPage() {
                 <h2 className="text-lg font-semibold mb-3 flex items-center text-[#A678E3]">
                     🤖 Personalized Recommendations
                 </h2>
+
                 {recommendations.length === 0 ? (
-                    <p className="text-gray-500 text-sm">
-                        Loading smart recommendations...
-                    </p>
+                    <p className="text-gray-500 text-sm">Loading smart recommendations...</p>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {recommendations.map((r, i) => (
@@ -144,15 +169,16 @@ export default function MenuPage() {
                         ))}
                     </div>
                 )}
+
                 <button
                     onClick={() => setChatOpen(true)}
-                    className="mt-4 px-4 py-2 rounded-lg text-white"
-                    style={{ backgroundColor: "#A678E3" }}
+                    className="mt-4 px-4 py-2 rounded-lg text-white bg-[#A678E3]"
                 >
                     Ask AI a Question
                 </button>
             </div>
 
+            {/* === 菜单标题 === */}
             <h1 className="text-3xl font-bold mb-6 text-center text-[#A678E3]">
                 🍴 Our Menu
             </h1>
@@ -186,13 +212,11 @@ export default function MenuPage() {
                     <input
                         type="range"
                         min="3"
-                        max="40"
+                        max="50"
                         value={priceMax}
                         onChange={(e) => setPriceMax(e.target.value)}
                     />
-                    <span className="w-10 text-right">
-                        ${Number(priceMax).toFixed(0)}
-                    </span>
+                    <span className="w-10 text-right">${Number(priceMax).toFixed(0)}</span>
                 </div>
             </div>
 
@@ -211,9 +235,7 @@ export default function MenuPage() {
                             <div>
                                 <h2 className="text-lg font-semibold mb-1">{item.name}</h2>
                                 <p className="text-sm text-gray-600 mb-2">{item.category}</p>
-                                <p className="text-gray-700 text-sm mb-3">
-                                    {item.description}
-                                </p>
+                                <p className="text-gray-700 text-sm mb-3">{item.description}</p>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="font-semibold text-lg">${item.price}</span>
@@ -229,11 +251,10 @@ export default function MenuPage() {
                 )}
             </div>
 
-            {/* === 悬浮聊天按钮（在购物车上方） === */}
+            {/* === 悬浮聊天按钮 === */}
             <button
-                onClick={() => setChatOpen((p) => !p)}
+                onClick={() => setChatOpen(true)}
                 className="fixed bottom-[95px] right-5 bg-[#A678E3] text-white p-3 rounded-full shadow-lg hover:scale-105 transition"
-                title="Ask AI"
             >
                 💬
             </button>
@@ -277,8 +298,7 @@ export default function MenuPage() {
                         />
                         <button
                             onClick={sendMessage}
-                            className="ml-2 px-3 py-2 rounded-lg text-white text-sm"
-                            style={{ backgroundColor: "#A678E3" }}
+                            className="ml-2 px-3 py-2 rounded-lg text-white text-sm bg-[#A678E3]"
                         >
                             Send
                         </button>

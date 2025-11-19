@@ -27,9 +27,13 @@ export default function AIAssistant() {
     }, [messages]);
 
     // ✅ 发送消息
+    // ✅ 发送消息
     const sendMessage = async () => {
         if (!input.trim()) return;
+
         const userMsg = { from: "user", text: input };
+
+        // 把用户消息加到对话里
         setMessages((prev) => [...prev, userMsg]);
         setInput("");
 
@@ -38,8 +42,11 @@ export default function AIAssistant() {
                 message: input,
                 userId: "guest",
             });
+
+            // 把 AI 回复加到对话里
             setMessages((prev) => [...prev, { from: "ai", text: data.reply }]);
         } catch (err) {
+            // 出错时给一个友好提示，不让应用崩溃
             setMessages((prev) => [
                 ...prev,
                 { from: "ai", text: "⚠️ Sorry, I couldn’t process that right now." },

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../axiosConfig";
 import Swal from "sweetalert2";
 
 export default function AdminMenuPage() {

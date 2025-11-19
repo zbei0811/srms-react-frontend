@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useCart } from "../context/CartContext";
-import axios from "axios";
+import axios from "../axiosConfig";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 

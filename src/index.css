@@ -72,3 +72,25 @@ a {
 .ai-card {
     @apply bg-white border border-purple-100 rounded-lg shadow-sm hover:shadow-md transition;
 }
+
+/* ===== 全局基础 ===== */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* ===== 背景缓慢放大动画 ===== */
+@keyframes zoomInSlow {
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(1.12);
+        /* 放大 12% */
+    }
+}
+
+.bg-zoom {
+    animation: zoomInSlow 18s ease-in-out infinite alternate;
+}

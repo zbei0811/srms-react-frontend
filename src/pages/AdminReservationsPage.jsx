@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../axiosConfig";
 import Swal from "sweetalert2";
 
 export default function AdminReservationsPage() {
@@ -106,8 +106,8 @@ export default function AdminReservationsPage() {
                                     <td className="px-4 py-3">
                                         <span
                                             className={`px-3 py-1 rounded-full text-sm font-medium ${r.status === "Confirmed"
-                                                    ? "bg-green-200 text-green-800"
-                                                    : "bg-yellow-200 text-yellow-800"
+                                                ? "bg-green-200 text-green-800"
+                                                : "bg-yellow-200 text-yellow-800"
                                                 }`}
                                         >
                                             {r.status || "Pending"}

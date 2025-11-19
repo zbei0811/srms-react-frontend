@@ -1,32 +1,38 @@
 // src/context/UserContext.jsx
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 
-const UserCtx = createContext(null);
-export const useUser = () => useContext(UserCtx);
+const UserContext = createContext();
+export const useUser = () => useContext(UserContext);
 
-export default function UserProvider({ children }) {
+export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [token, setToken] = useState(localStorage.getItem("token") || null);
 
+    // 保存登录状态
+    const saveLogin = (userData, jwtToken) => {
+        setUser(userData);
+        setToken(jwtToken);
+        localStorage.setItem("token", jwtToken);
+        localStorage.setItem("user", JSON.stringify(userData));
+    };
+
+    // 登出
+    const logout = () => {
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+    };
+
+    // 初始化读取 localStorage
     useEffect(() => {
-        const cached = localStorage.getItem("srms_user");
-        if (cached) setUser(JSON.parse(cached));
+        const cachedUser = localStorage.getItem("user");
+        if (cachedUser) setUser(JSON.parse(cachedUser));
     }, []);
 
-    const signin = (name = "Guest") => {
-        const id = "u_" + Math.random().toString(36).slice(2, 8);
-        const u = { id, name };
-        setUser(u);
-        localStorage.setItem("srms_user", JSON.stringify(u));
-    };
-
-    const signout = () => {
-        setUser(null);
-        localStorage.removeItem("srms_user");
-    };
-
     return (
-        <UserCtx.Provider value={{ user, signin, signout }}>
+        <UserContext.Provider value={{ user, token, saveLogin, logout }}>
             {children}
-        </UserCtx.Provider>
+        </UserContext.Provider>
     );
-}
+};

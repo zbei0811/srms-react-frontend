@@ -15,10 +15,12 @@ export const CartProvider = ({ children }) => {
         if (saved) setCart(JSON.parse(saved));
     }, []);
 
+    // 同步到本地存储
     useEffect(() => {
         localStorage.setItem("cart", JSON.stringify(cart));
     }, [cart]);
 
+    // 加入购物车
     const addToCart = (item) => {
         setCart((prev) => {
             const existing = prev.find((i) => i._id === item._id);
@@ -30,11 +32,34 @@ export const CartProvider = ({ children }) => {
         });
     };
 
+    // 删除某一项
     const removeFromCart = (id) =>
         setCart((prev) => prev.filter((i) => i._id !== id));
 
+    // 数量 +1
+    const increaseQty = (id) => {
+        setCart((prev) =>
+            prev.map((i) =>
+                i._id === id ? { ...i, qty: i.qty + 1 } : i
+            )
+        );
+    };
+
+    // 数量 -1，减到 0 就移除
+    const decreaseQty = (id) => {
+        setCart((prev) =>
+            prev
+                .map((i) =>
+                    i._id === id ? { ...i, qty: i.qty - 1 } : i
+                )
+                .filter((i) => i.qty > 0)
+        );
+    };
+
+    // 清空购物车
     const clearCart = () => setCart([]);
 
+    // 结算（当前流程主要用 CartPage，下单也可以用这个）
     const checkout = async () => {
         if (cart.length === 0) {
             Swal.fire("Your cart is empty!", "", "info");
@@ -59,7 +84,15 @@ export const CartProvider = ({ children }) => {
 
     return (
         <CartContext.Provider
-            value={{ cart, addToCart, removeFromCart, clearCart, checkout }}
+            value={{
+                cart,
+                addToCart,
+                removeFromCart,
+                clearCart,
+                checkout,
+                increaseQty,
+                decreaseQty,
+            }}
         >
             {children}
         </CartContext.Provider>

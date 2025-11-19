@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../axiosConfig";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
